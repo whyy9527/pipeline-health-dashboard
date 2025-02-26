@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pipeline Health Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { padding: 6px; text-align: left; border: 1px solid #ddd; height: 50px; }
+    th { background-color: #f4f4f4; }
+    tr.success { background-color: #d4edda; color: #155724; }
+    tr.failure, tr.error { background-color: #f8d7da; color: #721c24; } /* wrong 为红色 */
+    tr.running { background-color: #fff3cd; color: #856404; }
+    tr.unknown, tr.pending { background-color: #e9ecef; color: #495057; }
+    canvas { max-width: 400px; height: 150px; } /* 增大图表高度 */
+    .animate { transition: all 0.5s ease; }
+  </style>
+  <script src="/chart.min.js"></script>
+</head>
+<body>
+  <!-- <h1>Pipeline Health Dashboard</h1> -->
+  <table>
+    <tr>
+      <th>Repository</th>
+      <th>Latest Workflow</th>
+      <th>Status</th>
+      <th>Conclusion</th>
+      <th>Success Rate (%)</th>
+      <th>Last Updated</th>
+      <th>Recent Intervals (15-min)</th>
+    </tr>
+    <% repoStatuses.forEach((status, index) => { %>
+      <tr class="animate <%= status.latest.conclusion === 'success' ? 'success' : status.latest.conclusion === 'failure' || status.latest.conclusion === 'error' ? 'failure' : status.latest.status === 'in_progress' ? 'running' : status.latest.conclusion === 'pending' ? 'pending' : 'unknown' %>" data-timestamp="<%= timestamp %>">
+        <td style="width: 15%;"><%= status.repo %></td>
+        <td style="width: 15%;"><%= status.latest.name %></td>
+        <td style="width: 10%;"><%= status.latest.status %></td>
+        <td style="width: 10%;"><%= status.latest.conclusion || 'pending' %></td>
+        <td style="width: 10%; text-align: center;"><%= status.successRate %></td>
+        <td style="width: 15%;"><%= status.latest.updated_at ? new Date(status.latest.updated_at).toLocaleString() : 'N/A' %></td>
+        <td style="width: 25%;">
+          <canvas id="chart-<%= index %>"></canvas>
+          <script>
+            const ctx<%= index %> = document.getElementById('chart-<%= index %>').getContext('2d');
+            const data<%= index %> = <%- JSON.stringify(status.history) %>;
+            new Chart(ctx<%= index %>, {
+              type: 'bar',
+              data: {
+                labels: data<%= index %>.map(d => d.time.split(',')[0]),
+                datasets: [
+                  {
+                    label: 'Success',
+                    data: data<%= index %>.map(d => d.success),
+                    backgroundColor: 'green'
+                  },
+                  {
+                    label: 'Failure',
+                    data: data<%= index %>.map(d => -d.failure),
+                    backgroundColor: 'red'
+                  }
+                ]
+              },
+              options: {
+                scales: {
+                  y: { min: -5, max: 5, ticks: { stepSize: 1, callback: v => Math.abs(v) + (v > 0 ? ' S' : v < 0 ? ' F' : '') } },
+                  x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+                },
+                plugins: { legend: { display: false } },
+                maintainAspectRatio: false
+              }
+            });
+          </script>
+        </td>
+      </tr>
+    <% }); %>
+  </table>
+  
+  <p>Manually refresh to update (or implement Webhook for real-time).</p>
+</body>
+</html>
