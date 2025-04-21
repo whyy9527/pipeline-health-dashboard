@@ -14,7 +14,9 @@ const repos = [
   'firstedu-engineering/teacher-frontend',
   'firstedu-engineering/falcon-beak',
   'firstedu-engineering/marsladder-ui-component',
-  'firstedu-engineering/principal-portal'
+  'firstedu-engineering/principal-portal',
+  '/firstedu-engineering/mars-ladder-admin-web',
+  '/firstedu-engineering/E2E-Management',
 ];
 
 // 将 runs 按 15 分钟聚合
